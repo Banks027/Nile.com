@@ -3,22 +3,16 @@ Course: CNT 4714 - Fall 2026
 Assignment title: Project 1 - An Event-driven Enterprise Simulation
 Date: Sunday September 13, 2026
 */
-import java.awt.Color;
-import java.awt.BorderLayout;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
 
-import java.util.LinkedList;
-import java.util.Scanner;
 
 import javax.swing.*;
+import java.awt.*;
+import java.io.*;
+import java.util.*;
+import java.awt.event.*;
+/*fix item details textbox formating and total*/ 
+/*fix shoping cart duplicate  */
 
 public class Store implements ActionListener {
     private static final int WINDOW_WIDTH = 700;
@@ -40,6 +34,7 @@ public class Store implements ActionListener {
     private JButton searchButton;
 
     private int nextItemNumber = 1;
+    private int displayNumber;
 
     private final JLabel subtotalLabel;
     private final JLabel Item1Label = new JLabel();
@@ -381,7 +376,7 @@ public class Store implements ActionListener {
         subtotal = 0.0;
         cartTotal = 0.0;
         nextItemNumber = 1;
-
+        int displayNumber = nextItemNumber;
         subtotalText.setText("$0.00");
         detailsText.setText("");
         cartArea.setText("");
@@ -413,6 +408,7 @@ public class Store implements ActionListener {
         }
 
         int removedIndex = cart.size() - 1;
+        nextItemNumber--;
         String lastItem = cart.removeLast();
         int totalMarker = lastItem.lastIndexOf('$');
         if (totalMarker >= 0) {
