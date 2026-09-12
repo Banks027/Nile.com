@@ -9,8 +9,12 @@ Date: Sunday September 13, 2026
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
+import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.awt.event.*;
+import java.time.LocalDateTime;
+import java.time.format.*;
 /*fix item details textbox formating and total*/ 
 /*fix shoping cart duplicate  */
 
@@ -44,13 +48,33 @@ public class Store implements ActionListener {
     private final JLabel Item4Label = new JLabel();
     private final JLabel Item5Label = new JLabel();
 
+    private final JLabel cartLabel;
     private final JLabel itemIdLabel;
     private final JLabel quantityLabel;
     private final JLabel detailsLabel;
 
     private final LinkedList<String> cart = new LinkedList<>();
+    private final LinkedList<CartItem> invoiceItems = new LinkedList<>();
     private double cartTotal = 0.0;
     private double subtotal = 0.0;
+
+    private static final class CartItem {
+        private final String itemId;
+        private final String title;
+        private final double unitPrice;
+        private final int quantity;
+        private final int discount;
+        private final double lineTotal;
+
+        private CartItem(String itemId, String title, double unitPrice, int quantity, int discount, double lineTotal) {
+            this.itemId = itemId;
+            this.title = title;
+            this.unitPrice = unitPrice;
+            this.quantity = quantity;
+            this.discount = discount;
+            this.lineTotal = lineTotal;
+        }
+    }
 
     public Store() {
         window = new JFrame("Nile.com - FALL 2026");
@@ -148,7 +172,7 @@ public class Store implements ActionListener {
         Item1Text = new JTextField(FIELD_WIDTH);
         Item1Text.setEditable(false);
 
-        JLabel cartLabel = new JLabel();
+        cartLabel = new JLabel();
         cartLabel.setForeground(Color.RED);
         cartLabel.setBackground(Color.BLACK);
         cartLabel.setOpaque(true);
@@ -173,8 +197,8 @@ public class Store implements ActionListener {
         Item5Label.setBackground(Color.WHITE);
         Item5Label.setOpaque(true);
 
-        if (cart.isEmpty()) {
-            cartLabel.setText("Your shopping cart is currently empty.");
+    
+            cartLabel.setText("Your Shopping Cart Is Currently Empty.");
             Item1Label.setText(" ");
             Item2Label.setText(" ");
             Item3Label.setText(" ");
@@ -183,10 +207,7 @@ public class Store implements ActionListener {
             addButton.setEnabled(false);
             deleteButton.setEnabled(false);
             checkoutButton.setEnabled(false);
-        } else {
-            cartLabel.setText("Your Shopping Cart currently contains " + cart.size() + " item(s):");
-        }
-
+       
         JPanel itemPanel = new JPanel(new GridLayout(5, 1, 0, 4));
         itemPanel.setBackground(Color.BLACK);
         itemPanel.add(Item1Label);
@@ -260,27 +281,20 @@ public class Store implements ActionListener {
 
         try {
             String[] item = findItem(itemId);
-            if (item == null) {
-                
-                 JOptionPane.showMessageDialog(window, "Item ID " + itemId + " not in file","Nile Dot Com - ERROR", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            boolean available = Boolean.parseBoolean(item[2]);
+            
+            
             int inStockQty = Integer.parseInt(item[3]);
 
-            if (!available) {
-                JOptionPane.showMessageDialog(window, "Item is not available.","Nile Dot Com - ERROR", JOptionPane.ERROR_MESSAGE);
-                    addButton.setEnabled(false);
-                return;
-            }
+           
         
 
-            if (quantity > inStockQty) {
+            /*if (quantity > inStockQty) {
 
             JOptionPane.showMessageDialog(window, "Insufficient stock. Only " + inStockQty+ "on hand. Please reduce the quantity.","Nile Dot Com - ERROR", JOptionPane.ERROR_MESSAGE);
+                addButton.setEnabled(false);
+                searchButton.setEnabled(false);
                 return;
-            }
+            } */
 
             double priceDouble = Double.parseDouble(item[4]);
             double lineTotal = priceDouble * quantity;
@@ -307,33 +321,36 @@ public class Store implements ActionListener {
 
             switch (cart.size()) {
                 case 0:
-                    Item1Label.setText("Item " + count + " - SKU:" + itemId + " Desc:" + item[1] + " Price Ea. " + String.format("%.2f", priceDouble) + ", Qty:" + quantity + ", Total: " + String.format("$%.2f", lineTotal));
+                    Item1Label.setText("Item " + count + " - SKU: " + itemId + " Desc: " + item[1] + " Price Ea. $" + String.format("%.2f", priceDouble) + ", Qty: " + quantity + ", Total: " + String.format("$%.2f", lineTotal));
                     cart.addLast(itemId +" "+ item[1]+" " + String.format("%.2f", priceDouble)+" " +quantity +" " + discount+ "% $" + String.format("%.2f", lineTotal)); //ID, Name, indiv Price, Quantity, bulk discount, LineTotal
+                    invoiceItems.addLast(new CartItem(itemId, item[1], priceDouble, quantity, discount, lineTotal));
                     break; //split itemID string to display only the name of the item in the cart display, do not include amt in stock
                 case 1:
-                    Item2Label.setText("Item " + count + " - SKU:" + itemId + " Desc:" +  item[1] + " Price Ea. " + String.format("%.2f", priceDouble) + ", Qty:" + quantity + ", Total: " + String.format("$%.2f", lineTotal));
+                    Item2Label.setText("Item " + count + " - SKU: " + itemId + " Desc: " +  item[1] + " Price Ea. $" + String.format("%.2f", priceDouble) + ", Qty: " + quantity + ", Total: " + String.format("$%.2f", lineTotal));
                     cart.addLast(itemId +" "+ item[1]+" " + String.format("%.2f", priceDouble)+" " +quantity +" " + discount+ "% $" + String.format("%.2f", lineTotal)); //ID, Name, indiv Price, Quantity, bulk discount, LineTotal
+                    invoiceItems.addLast(new CartItem(itemId, item[1], priceDouble, quantity, discount, lineTotal));
                     break;
                 case 2:
-                    Item3Label.setText("Item " + count + " - SKU:" + itemId + " Desc:" +  item[1] + " Price Ea." + String.format("%.2f", priceDouble) + ", Qty:" + quantity + ", Total: " + String.format("$%.2f", lineTotal));
+                    Item3Label.setText("Item " + count + " - SKU: " + itemId + " Desc: " +  item[1] + " Price Ea. $" + String.format("%.2f", priceDouble) + ", Qty: " + quantity + ", Total: " + String.format("$%.2f", lineTotal));
                     cart.addLast(itemId +" "+ item[1]+" " + String.format("%.2f", priceDouble)+" " +quantity +" " + discount+ "% $" + String.format("%.2f", lineTotal)); //ID, Name, indiv Price, Quantity, bulk discount, LineTotal
+                    invoiceItems.addLast(new CartItem(itemId, item[1], priceDouble, quantity, discount, lineTotal));
                     break;
                 case 3:
-                    Item4Label.setText("Item " + count + " - SKU:" + itemId + " Desc:" +  item[1] + " Price Ea. " + String.format("%.2f", priceDouble) + ", Qty:" + quantity + ", Total: " + String.format("$%.2f", lineTotal));
+                    Item4Label.setText("Item " + count + " - SKU: " + itemId + " Desc: " +  item[1] + " Price Ea. $" + String.format("%.2f", priceDouble) + ", Qty: " + quantity + ", Total: " + String.format("$%.2f", lineTotal));
                     cart.addLast(itemId +" "+ item[1]+" " + String.format("%.2f", priceDouble)+" " +quantity +" " + discount+ "% $" + String.format("%.2f", lineTotal)); //ID, Name, indiv Price, Quantity, bulk discount, LineTotal
+                    invoiceItems.addLast(new CartItem(itemId, item[1], priceDouble, quantity, discount, lineTotal));
                     break;
                 case 4:
-                    Item5Label.setText("Item " + count + " - SKU:" + itemId + " Desc:" +  item[1] + " Price Ea. " + String.format("%.2f", priceDouble) + ", Qty:" + quantity + ", Total: " + String.format("$%.2f", lineTotal));
+                    Item5Label.setText("Item " + count + " - SKU: " + itemId + " Desc: " +  item[1] + " Price Ea. $" + String.format("%.2f", priceDouble) + ", Qty: " + quantity + ", Total: " + String.format("$%.2f", lineTotal));
                     cart.addLast(itemId +" "+ item[1]+" " + String.format("%.2f", priceDouble)+" " +quantity +" " + discount+ "% $" + String.format("%.2f", lineTotal)); //ID, Name, indiv Price, Quantity, bulk discount, LineTotal
+                    invoiceItems.addLast(new CartItem(itemId, item[1], priceDouble, quantity, discount, lineTotal));
                     break;
                 default:
                     JOptionPane.showMessageDialog(window, "Cart is full. Cannot add more items.");
                     return;
             }
                  
-            
-            
-            
+           
             nextItemNumber++;
             refreshCartControls();
 
@@ -345,7 +362,22 @@ public class Store implements ActionListener {
             emptyButton.setEnabled(true);
             checkoutButton.setEnabled(true);
             searchButton.setEnabled(true);
-             addButton.setEnabled(false);
+            addButton.setEnabled(false);
+
+            if (cart.size() >= 5) { //when cart is full, hide the item ID and quantity text fields and update the cart label to indicate that the cart is full
+               itemIdText.setVisible(false);
+                quantityText.setVisible(false);
+              
+
+            
+            } else if (cart.size() < 5 && !cart.isEmpty()) {
+                itemIdText.setVisible(true);
+                quantityText.setVisible(true);
+               cartLabel.setText("Your Shopping Cart Currently Contains " + cart.size() + " Item(s):");
+            }
+
+
+
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(window, "Unable to read item price.");
         }
@@ -356,6 +388,16 @@ public class Store implements ActionListener {
         String itemId = itemIdText.getText().trim();
         String qtyTextValue = quantityText.getText().trim();
         int quantity = Integer.parseInt(qtyTextValue);
+        String[] item = findItem(itemId);
+        boolean available = Boolean.parseBoolean(item[2]);
+        int inStockQty = Integer.parseInt(item[3]);
+         double priceDouble = Double.parseDouble(item[4]);
+        double lineTotal = priceDouble * quantity;
+        int discount = 0;
+        Integer requestedQty = null;
+
+          addButton.setEnabled(false);
+            searchButton.setEnabled(true);
 
 
         if (itemId.isEmpty()) {
@@ -363,18 +405,7 @@ public class Store implements ActionListener {
             return;
         }
 
-        String[] item = findItem(itemId);
-        if (item == null) {
-            JOptionPane.showMessageDialog(window, "Item ID " + itemId + " not found.");
-            addButton.setEnabled(false);
-            detailsText.setText("");
-            return;
-        }
-
-        boolean available = Boolean.parseBoolean(item[2]);
-        int inStockQty = Integer.parseInt(item[3]);
      
-        Integer requestedQty = null;
         if (!qtyTextValue.isEmpty()) {
             try {
                 requestedQty = Integer.parseInt(qtyTextValue);
@@ -385,11 +416,10 @@ public class Store implements ActionListener {
         }
 
         if (available) {
-            addButton.setEnabled(true);
-            //do clacuations for subtotal and total based on quantity and price
-             double priceDouble = Double.parseDouble(item[4]);
-            double lineTotal = priceDouble * quantity;
-            int discount = 0;
+            //searchButton.setEnabled(false);
+            //addButton.setEnabled(true);
+            //do calculations for subtotal and total based on quantity and price
+            
             if (quantity >= 5 && quantity <= 9) {
                 discount=10;
                 lineTotal *= 0.90;
@@ -401,31 +431,34 @@ public class Store implements ActionListener {
                 lineTotal *= 0.80;
             }
 
-            subtotal += lineTotal;
-            cartTotal = subtotal;
-            /*subtotalText.setText(String.format("$%.2f", subtotal));*/
-            
-      
+  
           //make program not do subtotal calculations until the add button is clicked, not when the search button is clicked, so that the user can change the quantity before adding to cart
-            detailsText.setText(item[0] + " " + item[1] + " " + item[3] + " $" + item[4] +" "+ quantity +" "+ discount+"% $" + String.format("%.2f", lineTotal));
-
-
-            
-            searchButton.setEnabled(false);
+           
+         } 
             if (requestedQty != null && requestedQty > inStockQty) {
+              
                  JOptionPane.showMessageDialog(window, "Insufficient stock. Only " + inStockQty+ " on hand. Please reduce the quantity.","Nile Dot Com - ERROR", JOptionPane.ERROR_MESSAGE);
-                   addButton.setEnabled(false);
+                    searchButton.setEnabled(true);
                 return;
-            }
-        } else {
-            JOptionPane.showMessageDialog(window, "Item is not available.");
+        }  if (!available || inStockQty <= 0) {
             addButton.setEnabled(false);
+            JOptionPane.showMessageDialog(window, "Sorry ... that item is out of stock, please try another item","Nile Dot Com - ERROR", JOptionPane.ERROR_MESSAGE);
+                   itemIdText.setText("");
+                    quantityText.setText("");
+             searchButton.setEnabled(true);
+            
+        } else {
+            addButton.setEnabled(true);
+            searchButton.setEnabled(false);
+            detailsText.setText(item[0] + " " + item[1] + " " + item[3] + " $" + item[4] +" "+ quantity +" "+ discount+"% $" + String.format("%.2f", lineTotal));
         }
     }
 
     private void clearCart() {
         System.out.println("Empty Cart button clicked.");
+        searchButton.setEnabled(true);
         cart.clear();
+        invoiceItems.clear();
         subtotal = 0.0;
         cartTotal = 0.0;
         nextItemNumber = 1;
@@ -433,12 +466,19 @@ public class Store implements ActionListener {
         subtotalText.setText("$0.00");
         detailsText.setText("");
         cartArea.setText("");
+        detailsLabel.setText("Details for Item #1:");
         Item1Label.setText(" ");
         Item2Label.setText(" ");
         Item3Label.setText(" ");
         Item4Label.setText(" ");
         Item5Label.setText(" ");
 
+
+       itemIdText.setVisible(true);
+        quantityText.setVisible(true);
+        searchButton.setEnabled(true);
+        addButton.setEnabled(false);
+    
         refreshCartControls();
     }
 
@@ -447,7 +487,7 @@ public class Store implements ActionListener {
         searchButton.setEnabled(false);
         deleteButton.setEnabled(false);
        checkoutButton.setEnabled(false);
-      
+     
         itemIdText.setVisible(false);
         quantityText.setVisible(false);
         System.out.println("The checkout button was clicked.");
@@ -455,22 +495,75 @@ public class Store implements ActionListener {
             JOptionPane.showMessageDialog(window, "Your cart is empty.");
             return;
         }
-        /* 
-        JOptionPane.showMessageDialog(window, "Number of line items: " + cart.size() + "\n\nItem# / ID / Title / Price / Qty / Disc % / Subtotal: $\n"+ for (int x=cart.size(), x>0, x--) { +cart.get(x-1)+ } +cart.toString() + 
-        "\n\nOrder subtotal: $" + String.format("%.2f", subtotal) + "\nTax rate: 6%\nTax amount: $"+ String.format("%.2f", subtotal * 0.06)+"\n\nORDER TOTAL: $" + 
-        String.format("%.2f", subtotal + (subtotal * 0.06))+"\n\nThanks for shoping at Nile Dot Com!" , "Nile.com - Final Invoice", JOptionPane.INFORMATION_MESSAGE);
-        */
+        StringBuilder invoiceText = new StringBuilder();
+        invoiceText.append("Date: ").append(new SimpleDateFormat("MM/dd/yyyy hh:mm:ss a z").format(new Date())).append("\n");
+        invoiceText.append("Number of line items: ").append(invoiceItems.size()).append("\n\n");
+        invoiceText.append("Item# / ID / Title / Price / Qty / Disc % / Subtotal:\n");
 
-        //make csv transactions file and write to it the items in the cart with their details, quantity, and total price
+        for (int index = 0; index < invoiceItems.size(); index++) {
+            CartItem item = invoiceItems.get(index);
+            invoiceText.append(String.format("%d. %s %s $%.2f %d %d%% $%.2f\n",
+                    index + 1,
+                    item.itemId,
+                    item.title,
+                    item.unitPrice,
+                    item.quantity,
+                    item.discount,
+                    item.lineTotal));
+        }
 
-        //window.dispose();
-       // window = new JFrame("Nile.com - FALL 2026");
+        double taxAmount = subtotal * 0.06;
+        double orderTotal = subtotal + taxAmount;
 
-      
+        invoiceText.append("\nOrder subtotal: $").append(String.format("%.2f", subtotal))
+                .append("\nTax rate: 6%")
+                .append("\nTax amount: $").append(String.format("%.2f", taxAmount))
+                .append("\n\nORDER TOTAL: $").append(String.format("%.2f", orderTotal))
+                .append("\n\nThanks for shopping at Nile Dot Com!");
+
+        JOptionPane.showMessageDialog(window, invoiceText.toString(), "Nile.com - Final Invoice", JOptionPane.INFORMATION_MESSAGE);
+        TransactionLog(invoiceItems);
     }
+
+
+  public static void TransactionLog(LinkedList<CartItem> invoiceItems) {
+        File logFile = new File("transactions.csv");
+        try (FileWriter fileWriter = new FileWriter(logFile, true);
+             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter)) {
+            for (CartItem item : invoiceItems) {
+                double discount=item.discount/100.0;
+
+
+                String timestampId = LocalDateTime.now().format(DateTimeFormatter.ofPattern("ddMMyyyyHHmmss"));
+                String dateStamp = new SimpleDateFormat("MMMM dd yyyy hh:mm:ss a z").format(new Date());
+                String formattedLine = String.format("%s, %s, %s, %.2f, %d, %.2f, $%.2f, %s",
+                        timestampId,
+                        item.itemId,
+                        item.title,
+                        item.unitPrice,
+                        item.quantity,
+                        discount,
+                        item.lineTotal,
+                        dateStamp);
+
+                bufferedWriter.write(formattedLine);
+                bufferedWriter.newLine();
+            }
+        bufferedWriter.newLine();
+
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(null, "Error writing to transaction log: " + e.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+        } catch (RuntimeException e) {
+            JOptionPane.showMessageDialog(null, "Error writing to transaction log: " + e.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+        }
+        
+    }
+
+
 
     private void deleteLastItem() {
         System.out.println("The Delete Last item added to cart button was clicked.");
+        detailsText.setText("");
         if (cart.isEmpty()) {
             JOptionPane.showMessageDialog(window, "Cart is empty. Cannot delete items.");
             return;
@@ -492,6 +585,10 @@ public class Store implements ActionListener {
                 subtotal = Math.max(0.0, subtotal);
                 cartTotal = subtotal;
             }
+        }
+
+        if (!invoiceItems.isEmpty()) {
+            invoiceItems.removeLast();
         }
 
         switch (removedIndex) {
@@ -516,26 +613,47 @@ public class Store implements ActionListener {
 
         cartArea.setText(String.join(System.lineSeparator(), cart));
         subtotalText.setText(String.format("$%.2f", subtotal));
+
+          if (cart.size() <= 5) {
+               itemIdText.setVisible(true);
+                quantityText.setVisible(true);
+            } 
         refreshCartControls();
+         addButton.setEnabled(false);
     }
 
     private void refreshCartControls() {
         int displayNumber = nextItemNumber;
+        boolean hasItems = !cart.isEmpty();
+
         itemIdLabel.setText("Enter ID for Item #" + displayNumber + ":");
         quantityLabel.setText("Enter quantity for Item #" + displayNumber + ":");
-        detailsLabel.setText("Details for Item #" + displayNumber + ":");
+        detailsLabel.setText("Details for Item #" + cart.size() + ":");
         subtotalLabel.setText("Current Subtotal for " + cart.size() + " item(s):");
 
+        if (cart.size() >= 5) {
+            cartLabel.setText("Your Shopping Cart Currently Contains " + cart.size() + " Item(s):");
+                searchButton.setActionCommand("Search for item #" + cart.size());
+                searchButton.setText("Search for item #" + cart.size());
+                addButton.setActionCommand("Add Item #" + cart.size() + " To Cart");
+                addButton.setText("Add Item #" + cart.size() + " To Cart");
+   
+        } else {
         searchButton.setActionCommand("Search for item #" + displayNumber);
         searchButton.setText("Search for item #" + displayNumber);
         addButton.setActionCommand("Add Item #" + displayNumber + " To Cart");
         addButton.setText("Add Item #" + displayNumber + " To Cart");
 
-        boolean hasItems = !cart.isEmpty();
+        }
+      if (cart.isEmpty()) {
+            cartLabel.setText("Your Shopping Cart Is Currently Empty.");
+            detailsLabel.setText("Details for Item #1:");
+        } 
         deleteButton.setEnabled(hasItems);
         emptyButton.setEnabled(hasItems);
         checkoutButton.setEnabled(hasItems);
         addButton.setEnabled(hasItems && cart.size() < 5);
+        searchButton.setEnabled(hasItems || cart.size() < 5);
     }
 
     private String[] findItem(String itemId) {
@@ -556,12 +674,23 @@ public class Store implements ActionListener {
                     String itemIDFromFile = aScanner.next();
 
                     if (itemIDFromFile.equals(itemId)) {
+                         detailsLabel.setText("Details for Item #" + (cart.size() + 1)+ ":");
                         itemDetails = new String[] {itemIDFromFile, aScanner.next(), aScanner.next(), aScanner.next(), aScanner.next()};
                         break;
                     }
                 }
                 inventoryLine = inputBufferReader.readLine();
+
+
+
             }
+
+            if (itemDetails == null) {
+                addButton.setEnabled(false);
+            detailsText.setText("");
+                JOptionPane.showMessageDialog(window, "Item ID " + itemId + " not in file","Nile Dot Com - ERROR", JOptionPane.ERROR_MESSAGE);
+            }
+
         } catch (FileNotFoundException fileNotFoundException) {
             JOptionPane.showMessageDialog(null, "Error: File not found", "ERROR", JOptionPane.ERROR_MESSAGE);
         } catch (IOException | NumberFormatException e) {
@@ -574,7 +703,4 @@ public class Store implements ActionListener {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(Store::new);
     }
-
-
-
 }
